@@ -1,0 +1,104 @@
+// Animate artboards
+
+var artboards = [[doc currentPage] artboards];
+randomCoordX = -9999;
+randomCoordY = -9999;
+delay = .25;
+startEndDelay = 1;
+
+function focusOnArtboard(artboard) {
+    if(artboard==null) return;
+
+    [artboard select:true byExpandingSelection:false];
+
+    // Uncomment this line if you want to change current zoom factor to whatever you want to.
+    // doc.currentPage().setZoomValue(1);
+    
+    var action=doc.actionsController().actionWithName("MSCanvasActions").centerSelectionInVisibleArea(nil);
+
+    // You can optionally deselect the artboard if you need so using this call.
+    [artboard select:false byExpandingSelection:false];
+}
+
+
+// move doc viewport to random area using a slice
+// var slice = [MSSliceLayer new];
+// a = artboards[0];
+// w = [[a frame] width];
+// h = [[a frame] height];
+// [[slice frame] setX:randomCoordX];
+// [[slice frame] setY:randomCoordY];
+// [[slice frame] setWidth:w];
+// [[slice frame] setHeight:h];
+// [[doc currentPage] addSlice:slice];
+// [[doc currentView] refresh];
+// focusOnArtboard(slice);
+// [slice removeFromParent];
+
+// move first artboard and set up viewport for animation
+a = artboards[0];
+lastX = [[a frame] x];
+lastY = [[a frame] y];
+[[a frame] setX: randomCoordX];
+[[a frame] setY: randomCoordY];
+focusOnArtboard(a);
+
+[coscript setShouldKeepAround:true];
+
+// delay start a bit to account for focusOnArtboard animation lag
+var cosi = [coscript scheduleWithInterval:startEndDelay jsFunction:function(cinterval) { 
+  // start actual animation
+
+  forward = true;
+  var i = 1; //start from second artboard
+  [coscript scheduleWithRepeatingInterval:delay jsFunction:function(cinterval) {
+      artboard = artboards[i];
+      x = [[artboard frame] x];
+      y = [[artboard frame] y];
+      
+      // move current artboard to random area viewport
+      [[artboard frame] setX: randomCoordX];
+      [[artboard frame] setY: randomCoordY];
+      [[doc currentView] refresh];
+
+      // move the previous artboard back to position
+      prevArtboard = nil;
+      if (forward == true) {
+        prevArtboard = artboards[i-1];
+      } else {
+
+        prevArtboard = artboards[i+1];
+      }
+      [[prevArtboard frame] setX: lastX];
+      [[prevArtboard frame] setY: lastY];
+      lastX = x;
+      lastY = y;
+
+      if (forward == true) {
+        i++;
+      } else {
+        i--;
+      }
+
+      if (i == artboards.length()) {
+            forward = false;
+            i--;
+            i--;
+          // move final artboard back to position
+          // var cosi = [coscript scheduleWithInterval:startEndDelay jsFunction:function(cinterval) {
+          //   [[artboard frame] setX: x];
+          //   [[artboard frame] setY: y];
+          //   focusOnArtboard(artboard);
+          // }];
+      }
+
+      if (i < 0) {
+          var cosi = [coscript scheduleWithInterval:startEndDelay jsFunction:function(cinterval) {
+            [[artboard frame] setX: x];
+            [[artboard frame] setY: y];
+            focusOnArtboard(artboard);
+          }];
+        [cinterval cancel];
+      }
+  }];
+}];
